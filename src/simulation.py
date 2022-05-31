@@ -1,9 +1,10 @@
-from drone import *
-from map import *
-from hybrid import DroneHybrid
-from weather import *
-from sector import *
-from button import *
+from drones.greedy import DroneGreedy
+from drones.random import DroneRandom
+from environment.map import *
+from drones.hybrid import DroneHybrid
+from environment.weather import *
+from environment.sector import *
+from utils.button import *
 import time
 
 
@@ -11,50 +12,40 @@ class Simulation:
     def __init__(self):
         pygame.init()
         self.running, self.playing = True, True
-        self.UP_KEY, self.DOWN_KEY, self.START_KEY, self.BACK_KEY = False, False, False, False
         self.screen = pygame.display.set_mode((DISPLAY_W, DISPLAY_H))
-        # use to draw and do update to tiles
-        self.tile_group = pygame.sprite.Group()
-        # use to draw and do update to drones
-        self.drone_group = pygame.sprite.Group()
-        # to put created tiles dont know/can do the same with the Group above
-        self.tile_dict = {}
-        # none actualized tile map for hybrid drone
-        self.hybrid_drone_map = {}
-        # to put created tiles dont know/can do the same with the Group above
+        self.tile_group = pygame.sprite.Group()  # use to draw and do update to tiles
+        self.drone_group = pygame.sprite.Group()  # use to draw and do update to drones
+        self.tile_dict = {}  # to save created tiles
+        self.hybrid_drone_map = {}  # none actualized tile map for hybrid drone
         self.drone_list = []
         self.wind = Wind(
             random.choice([Direction.North, Direction.South, Direction.East, Direction.West]),
-            random.randint(1, 10))  # Static for testing
-        self.wind_display = Button(WHITE, 40, 120, 180, 30, "Wind direction: " + str(self.wind.direction))
+            random.randint(1, 10))
+        self.wind_display = Button(PURPLE, 40, 450, 180, 30,
+                                   "Wind direction: " + str(self.wind.direction).split(".")[1])
         self.oil_list: List[Oil] = []
-
         self.sector_list: List[Sector] = []
         self.recharger_list: List[Tile] = []
 
         self.hybrid_drone_sectors_on_fire: List[Sector] = []
         self.hybrid_drone_points_on_fire: List[Point] = []
 
-        # button and variable that indicates if sim is in step or continuous mode
-        self.step_button = None
-        self.step = False
-
         # button, step counter and variable that make sim do one step in step mode
         self.step_next_button = None
         self.step_counter = 0
         self.step_pause = False
 
-        # button and var that says to create reactive drones
-        self.reactive_drone_button = None
-        self.create_reactive_drone = False
+        # button and var that says to create greedy drones
+        self.greedy_drone_button = None
+        self.create_greedy_drone = False
 
         # button and var that indicates to create hybrid drones
         self.hybrid_drone_button = None
         self.create_hybrid_drone = False
 
         # button and var that indicates to create hybrid coop drones
-        self.naive_drone_button = None
-        self.create_naive_drone = False
+        self.random_drone_button = None
+        self.create_random_drone = False
 
         self.drone_not_chosen = True
 
@@ -63,12 +54,10 @@ class Simulation:
         while self.drone_not_chosen and self.playing and self.running:
             self.check_events()
         self.init_and_draw_drones()
-        time.sleep(0.1)
+        time.sleep(1)
         while self.playing:
             self.step_counter += 1
-            while self.step and self.step_pause and self.playing and self.running:
-                self.check_events()
-            self.step_pause = True
+
             if self.check_end_conditions():
                 print("------------Simulation END------------")
                 self.calculate_metrics()
@@ -91,12 +80,11 @@ class Simulation:
                     self.hybrid_drone_sectors_on_fire.append(sector)
 
                 if not sector.withOil and sector in self.hybrid_drone_sectors_on_fire:
-                    #remove sector from drone list
+                    # remove sector from drone list
                     self.hybrid_drone_sectors_on_fire.remove(sector)
 
             self.update()
             self.draw()
-            self.reset_keys()
             time.sleep(0.5)
 
     def check_events(self):
@@ -104,48 +92,28 @@ class Simulation:
             mouse_position = pygame.mouse.get_pos()
             if event.type == pygame.QUIT:
                 self.running, self.playing = False, False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    self.START_KEY = True
-                if event.key == pygame.K_BACKSPACE:
-                    self.BACK_KEY = True
-                if event.key == pygame.K_DOWN:
-                    self.DOWN_KEY = True
-                if event.key == pygame.K_UP:
-                    self.UP_KEY = True
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if self.naive_drone_button.is_over(mouse_position):
-                    self.create_naive_drone = True
-                    self.create_reactive_drone = False
+                if self.random_drone_button.is_over(mouse_position):
+                    self.create_random_drone = True
+                    self.create_greedy_drone = False
                     self.create_hybrid_drone = False
                     self.drone_not_chosen = False
                     if not self.oil_list:
                         self.create_oil_spills()
-                if self.reactive_drone_button.is_over(mouse_position):
-                    self.create_reactive_drone = True
+                if self.greedy_drone_button.is_over(mouse_position):
+                    self.create_greedy_drone = True
                     self.create_hybrid_drone = False
-                    self.create_naive_drone = False
+                    self.create_random_drone = False
                     self.drone_not_chosen = False
                     if not self.oil_list:
                         self.create_oil_spills()
                 if self.hybrid_drone_button.is_over(mouse_position):
                     self.create_hybrid_drone = True
-                    self.create_reactive_drone = False
-                    self.create_naive_drone = False
+                    self.create_greedy_drone = False
+                    self.create_random_drone = False
                     self.drone_not_chosen = False
                     if not self.oil_list:
                         self.create_oil_spills()
-                if self.step_button.is_over(mouse_position):
-                    self.step = not self.step
-                    self.step_pause = not self.step_pause
-                    self.step_button.text = 'step:' + str(self.step)
-                    self.step_button.draw(self.screen)
-                    pygame.display.flip()
-                if self.step_next_button.is_over(mouse_position):
-                    self.step_pause = False
-
-    def reset_keys(self):
-        self.UP_KEY, self.DOWN_KEY, self.START_KEY, self.BACK_KEY = False, False, False, False
 
     # Create things
 
@@ -161,61 +129,61 @@ class Simulation:
                 self.tile_dict[tile.point] = tile
                 self.hybrid_drone_map[tile.point] = tile
 
-    def create_naive_drones(self):
-        drone = DroneNaive(self, 16, 16)
+    def create_random_drones(self):
+        drone = DroneRandom(self, 16, 16)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneNaive(self, 17, 16)
+        drone = DroneRandom(self, 17, 16)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneNaive(self, 18, 16)
+        drone = DroneRandom(self, 18, 16)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneNaive(self, 16, 17)
+        drone = DroneRandom(self, 16, 17)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneNaive(self, 17, 17)
+        drone = DroneRandom(self, 17, 17)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneNaive(self, 18, 17)
+        drone = DroneRandom(self, 18, 17)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
 
-    def create_reactive_drones(self):
-        drone = DroneReactive(self, 16, 16)
+    def create_greedy_drones(self):
+        drone = DroneGreedy(self, 16, 16)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 15, 16)
+        drone = DroneGreedy(self, 15, 16)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 17, 16)
+        drone = DroneGreedy(self, 17, 16)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 15, 17)
+        drone = DroneGreedy(self, 15, 17)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 16, 17)
+        drone = DroneGreedy(self, 16, 17)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 17, 17)
+        drone = DroneGreedy(self, 17, 17)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 15, 18)
+        drone = DroneGreedy(self, 15, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 16, 18)
+        drone = DroneGreedy(self, 16, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        """drone = DroneReactive(self, 17, 18)
+        """drone = DroneGreedy(self, 17, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 18, 18)
+        drone = DroneGreedy(self, 18, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 16, 19)
+        drone = DroneGreedy(self, 16, 19)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneReactive(self, 17, 19)
+        drone = DroneGreedy(self, 17, 19)
         self.drone_group.add(drone)
         self.drone_list.append(drone)"""
 
@@ -269,11 +237,8 @@ class Simulation:
             self.oil_list.append(oil)
 
     def create_buttons(self):
-        self.step_button = Button(WHITE, 40, 40, 180, 30, 'step:' + str(self.step))
-        self.step_next_button = Button(WHITE, 40, 80, 180, 30, 'next step')
-
-        self.naive_drone_button = Button(WHITE, 250, 40, 160, 30, 'Start with naive drones')
-        self.reactive_drone_button = Button(WHITE, 425, 40, 160, 30, 'Start with reactive drones')
+        self.random_drone_button = Button(WHITE, 40, 29, 180, 30, 'Random Drones')
+        self.greedy_drone_button = Button(WHITE, 40, 79, 180, 30, 'Greedy Drones')
         self.hybrid_drone_button = Button(WHITE, 600, 40, 160, 30, 'Start with hybrid drones')
 
     # draw things
@@ -316,12 +281,10 @@ class Simulation:
         self.drone_group.draw(self.screen)
 
     def draw_buttons(self):
-        #self.step_button.draw(self.screen)
-        #self.step_next_button.draw(self.screen)
-        self.reactive_drone_button.draw(self.screen)
-        #self.hybrid_drone_button.draw(self.screen)
-        self.naive_drone_button.draw(self.screen)
+        self.greedy_drone_button.draw(self.screen)
+        self.random_drone_button.draw(self.screen)
         self.wind_display.draw(self.screen)
+        # self.hybrid_drone_button.draw(self.screen)
 
     # update things
 
@@ -349,14 +312,14 @@ class Simulation:
         self.create_sectors()
 
     def init_and_draw_drones(self):
-        if self.create_reactive_drone:
-            self.create_reactive_drones()
+        if self.create_greedy_drone:
+            self.create_greedy_drones()
 
         if self.create_hybrid_drone:
             self.create_hybrid_drones()
 
-        if self.create_naive_drone:
-            self.create_naive_drones()
+        if self.create_random_drone:
+            self.create_random_drones()
 
         self.draw_drones()
         pygame.display.flip()
@@ -381,6 +344,7 @@ class Simulation:
 
         return end
 
+    # TODO 50% oil it ends
     def calculate_metrics(self):
         print("Total Steps:", self.step_counter)
         print("Number of Oil Spills:", len(self.oil_list))

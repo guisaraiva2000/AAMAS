@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass, field
-from util import Direction
-from tile import *
+from utils.util import Direction
+from environment.tile import *
 
 
 @dataclass

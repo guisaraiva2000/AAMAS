@@ -1,7 +1,7 @@
 import pygame
-from util import Point
+from utils.util import Point
 from typing import List
-from settings import *
+from utils.settings import *
 from abc import ABC
 
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from util import Point
+from utils.util import Point
 from typing import List
 import random
 

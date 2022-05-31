@@ -1,9 +1,9 @@
 from typing import List
 
-from drone import Drone
-from settings import *
-from util import *
-from tile import Recharger
+from drones.drone import Drone
+from utils.settings import *
+from utils.util import *
+from environment.tile import Recharger
 
 
 class Desire(Enum):
