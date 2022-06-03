@@ -37,12 +37,12 @@ def direction_action(from_point, to_point):
 
 
 class DroneHybrid(Drone):
-    def __init__(self, simulation, x, y, tile_dict: dict):
-        super().__init__(simulation, x, y)
+    def __init__(self, clean_waters, x, y, tile_dict: dict):
+        super().__init__(clean_waters, x, y)
         self.map = tile_dict
         self.intention = {"Desire": None, "Point": None}
-        self.sectors_on_fire = simulation.hybrid_drone_sectors_on_fire
-        self.points_on_fire = simulation.hybrid_drone_points_on_fire
+        self.sectors_on_fire = clean_waters.hybrid_drone_sectors_on_fire
+        self.points_on_fire = clean_waters.hybrid_drone_points_on_fire
         self.visited_sector_tiles = []
         self.plan_queue = []
         self.last_action = None
@@ -90,7 +90,7 @@ class DroneHybrid(Drone):
         for point in self.fov:
             if self.map[point].with_oil and point not in self.points_on_fire:
                 self.points_on_fire.append(point)
-                for sec in self.simulation.sector_list:
+                for sec in self.clean_waters.sector_list:
                     if point in sec.sectorTiles and sec not in self.sectors_on_fire:
                         self.sectors_on_fire.append(sec)
 
@@ -166,7 +166,7 @@ class DroneHybrid(Drone):
 
     def is_plan_sound(self, action: Action) -> bool:
         if action == Action.Recharge:
-            return self.simulation.tile_dict[self.point].__class__ == Recharger and self.can_recharge()
+            return self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.can_recharge()
         elif action == Action.Move_North:
             return Point(self.point.x, self.point.y + 1) not in self.drone_positions_list()
         elif action == Action.Move_South:
@@ -205,7 +205,7 @@ class DroneHybrid(Drone):
         return self.battery < 100
 
     def drone_positions_list(self) -> list:
-        return [drone.point for drone in self.simulation.drone_list]
+        return [drone.point for drone in self.clean_waters.drone_list]
 
     def get_maximized_dists_point(self, points: List[Point]) -> Point:
         # filtered by sector
@@ -242,8 +242,8 @@ class DroneHybrid(Drone):
 
     def reactive_behaviour(self) -> None:
         if self.map[self.point].with_oil:
-            if self.point not in self.simulation.hybrid_drone_points_on_fire:
-                self.simulation.hybrid_drone_points_on_fire.append(self.point)
+            if self.point not in self.clean_waters.hybrid_drone_points_on_fire:
+                self.clean_waters.hybrid_drone_points_on_fire.append(self.point)
         elif self.map[self.point].__class__ == Recharger:
             if self.can_recharge():
                 self.recharge()

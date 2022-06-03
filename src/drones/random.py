@@ -4,14 +4,14 @@ from utils.util import random_direction
 
 
 class DroneRandom(Drone):
-    def __init__(self, simulation, x, y):
-        super().__init__(simulation, x, y)
+    def __init__(self, clean_waters, x, y):
+        super().__init__(clean_waters, x, y)
 
     def agent_decision(self):
-        if self.simulation.tile_dict[self.point].with_oil:
+        if self.clean_waters.tile_dict[self.point].with_oil:
             self.clean_water()
 
-        elif self.simulation.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
+        elif self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
             self.recharge()
 
         else:

@@ -6,9 +6,9 @@ from abc import ABC
 
 
 class Tile(pygame.sprite.Sprite, ABC):
-    def __init__(self, simulation, x, y, color):
+    def __init__(self, clean_waters, x, y, color):
         super().__init__()
-        self.simulation = simulation
+        self.clean_waters = clean_waters
         self.image = pygame.Surface((TILESIZE, TILESIZE))
         self.image.fill(color)
         self.rect = self.image.get_rect()
@@ -24,14 +24,14 @@ class Tile(pygame.sprite.Sprite, ABC):
 
 
 class Recharger(Tile):
-    def __init__(self, simulation, x, y):
-        super().__init__(simulation, x, y, RED)
+    def __init__(self, clean_waters, x, y):
+        super().__init__(clean_waters, x, y, RED)
         self.is_recharger = True
 
 
 class Ocean(Tile):
-    def __init__(self, simulation, x, y):
-        super().__init__(simulation, x, y, BLUE)
+    def __init__(self, clean_waters, x, y):
+        super().__init__(clean_waters, x, y, BLUE)
 
 
 def get_neighbours(tile: Tile, tile_dict: dict) -> List[Tile]:

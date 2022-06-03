@@ -1,14 +1,16 @@
+import math
+
 from drones.greedy import DroneGreedy
 from drones.random import DroneRandom
 from environment.map import *
 from drones.hybrid import DroneHybrid
-from environment.weather import *
+from environment.oil import *
 from environment.sector import *
 from utils.button import *
 import time
 
 
-class Simulation:
+class CleanWaters:
     def __init__(self):
         pygame.init()
         self.running, self.playing = True, True
@@ -31,9 +33,7 @@ class Simulation:
         self.hybrid_drone_points_on_fire: List[Point] = []
 
         # button, step counter and variable that make sim do one step in step mode
-        self.step_next_button = None
         self.step_counter = 0
-        self.step_pause = False
 
         # button and var that says to create greedy drones
         self.greedy_drone_button = None
@@ -49,30 +49,34 @@ class Simulation:
 
         self.drone_not_chosen = True
 
-    def simulation_loop(self):
+    def main_loop(self):
         self.initial_draw()
         while self.drone_not_chosen and self.playing and self.running:
             self.check_events()
         self.init_and_draw_drones()
-        time.sleep(1)
+        time.sleep(0.5)
         while self.playing:
             self.step_counter += 1
 
             if self.check_end_conditions():
-                print("------------Simulation END------------")
+                print("------------Game Over------------")
                 self.calculate_metrics()
+                self.drone_not_chosen = True
 
                 while self.playing and self.running:
                     self.check_events()
                 break
+
             self.check_events()
+
             for agent in self.drone_list:
                 agent.agent_decision()
-            for wild in self.oil_list:
-                update_oil(wild)
-                expand_oil(wild, self.tile_dict, self.wind)
-                if not wild.stop_time and not len(wild.tiles):
-                    wild.stop_time = self.step_counter
+
+            for oil in self.oil_list:
+                update_oil(oil)
+                expand_oil(oil, self.tile_dict, self.wind)
+                if not oil.stop_time and not len(oil.tiles):
+                    oil.stop_time = self.step_counter
 
             for sector in self.sector_list:
                 if sector.calculate_oil_alert(self.oil_list):
@@ -85,7 +89,10 @@ class Simulation:
 
             self.update()
             self.draw()
-            time.sleep(0.5)
+            time.sleep(0.1)
+
+        while self.drone_not_chosen and self.playing and self.running:
+            self.check_events()
 
     def check_events(self):
         for event in pygame.event.get():
@@ -130,51 +137,51 @@ class Simulation:
                 self.hybrid_drone_map[tile.point] = tile
 
     def create_random_drones(self):
-        drone = DroneRandom(self, 16, 16)
+        drone = DroneRandom(self, 6, 6)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneRandom(self, 17, 16)
+        drone = DroneRandom(self, 10, 10)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneRandom(self, 18, 16)
+        drone = DroneRandom(self, 14, 14)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneRandom(self, 16, 17)
+        drone = DroneRandom(self, 18, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneRandom(self, 17, 17)
+        drone = DroneRandom(self, 22, 22)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneRandom(self, 18, 17)
+        drone = DroneRandom(self, 26, 26)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
 
     def create_greedy_drones(self):
-        drone = DroneGreedy(self, 16, 16)
+        drone = DroneGreedy(self, 6, 6)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneGreedy(self, 15, 16)
+        drone = DroneGreedy(self, 10, 10)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneGreedy(self, 17, 16)
+        drone = DroneGreedy(self, 14, 14)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneGreedy(self, 15, 17)
+        drone = DroneGreedy(self, 18, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneGreedy(self, 16, 17)
+        drone = DroneGreedy(self, 22, 22)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneGreedy(self, 17, 17)
+        drone = DroneGreedy(self, 26, 26)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        drone = DroneGreedy(self, 15, 18)
+        """drone = DroneGreedy(self, 15, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
         drone = DroneGreedy(self, 16, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        """drone = DroneGreedy(self, 17, 18)
+        drone = DroneGreedy(self, 17, 18)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
         drone = DroneGreedy(self, 18, 18)
@@ -220,7 +227,7 @@ class Simulation:
             for x in range(0, 32 // sector_size, 1):
                 # id, probability per oil, size
                 sector = Sector(sector_id, 16 / 64, sector_size)
-                sector_id = sector_id + 1
+                sector_id += 1
                 sector.create_sector(x * sector_size, y * sector_size)
                 self.sector_list.append(sector)
 
@@ -240,8 +247,6 @@ class Simulation:
         self.random_drone_button = Button(WHITE, 40, 29, 180, 30, 'Random Drones')
         self.greedy_drone_button = Button(WHITE, 40, 79, 180, 30, 'Greedy Drones')
         self.hybrid_drone_button = Button(WHITE, 600, 40, 160, 30, 'Start with hybrid drones')
-
-    # draw things
 
     def draw(self):
         self.update_tiles()
@@ -286,8 +291,6 @@ class Simulation:
         self.wind_display.draw(self.screen)
         # self.hybrid_drone_button.draw(self.screen)
 
-    # update things
-
     def update(self):
         self.tile_group.update()
         self.drone_group.update()
@@ -296,15 +299,12 @@ class Simulation:
         for tile in self.tile_dict.values():
             if tile.__class__ == Recharger:
                 color = RED
+            elif tile.with_oil:
+                color = BLACK
             else:
                 color = BLUE
+
             tile.image.fill(color)
-
-            if tile.with_oil:
-                color = BLACK
-                tile.image.fill(color)
-
-    # initiate and create things
 
     def initiate(self):
         self.create_buttons()
@@ -324,37 +324,27 @@ class Simulation:
         self.draw_drones()
         pygame.display.flip()
 
-    # End things
-
     def check_end_conditions(self):
-        # All Drones Dead
         if len(self.drone_list) == 0:
             print("All Drones Died")
             return True
 
-        # All Oil Dead and Calculate Total Priority Burned
-        end = True
+        n_tiles_w_oil = 0
         for oil in self.oil_list:
-            if len(oil.tiles) != 0:
-                end = False
+            n_tiles_w_oil += len(oil.tiles)
 
-        if end:
-            print("All Oil Spills Cleaned")
+        if n_tiles_w_oil >= math.pow(GRID_W / TILESIZE, 2) / 2:
+            print("Oil Covered Half Ocean")
             return True
 
-        return end
+        return False
 
-    # TODO 50% oil it ends
     def calculate_metrics(self):
         print("Total Steps:", self.step_counter)
         print("Number of Oil Spills:", len(self.oil_list))
-        total_distance = n_tiles = 0
         for oil in self.oil_list:
-            print("-----------------------", oil)
-            # spread
-            n_tiles += len(oil.points)
-            # oil time to extinguish
+            print("--------------------------------------\n{}".format(oil))
             if oil.stop_time:
-                print("Time to extinguish:", oil.stop_time - oil.start_time)
+                print("Time to clean:", oil.stop_time - oil.start_time)
             else:
-                print("Time to extinguish: Was not extinguished.")
+                print("Time to clean: Was not cleaned.")

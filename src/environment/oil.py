@@ -58,10 +58,12 @@ def expand_oil(oil: Oil, tile_dict: dict, wind: Wind) -> None:
             if tile.point.x == 0:
                 continue
             new = tile_dict[Point(tile.point.x - 1, tile.point.y)]
+
         if new.with_oil or new.is_recharger:
             continue
         if new.__class__ not in random.choices(types, weights=[0.3, 0.7], k=1):
             continue
+
         new.with_oil = True
         new_tiles.append(new)
 

@@ -1,9 +1,9 @@
-from simulation import Simulation
+from clean_waters import CleanWaters
 
 
 if __name__ == "__main__":
-    sim = Simulation()
+    cw = CleanWaters()
 
-    while sim.running:
-        sim.initiate()
-        sim.simulation_loop()
+    while cw.running:
+        cw.initiate()
+        cw.main_loop()

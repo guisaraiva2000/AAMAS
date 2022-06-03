@@ -6,15 +6,15 @@ from utils.util import Direction, random_direction
 
 
 class DroneGreedy(Drone):
-    def __init__(self, simulation, x, y):
-        super().__init__(simulation, x, y)
+    def __init__(self, clean_waters, x, y):
+        super().__init__(clean_waters, x, y)
         self.fov_range = FOV_ACTUATOR_RANGE
 
     def agent_decision(self) -> None:
-        if self.simulation.tile_dict[self.point].with_oil:
+        if self.clean_waters.tile_dict[self.point].with_oil:
             self.clean_water()
 
-        elif self.simulation.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
+        elif self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
             self.recharge()
 
         else:
@@ -47,10 +47,10 @@ class DroneGreedy(Drone):
         drones_around = self.see_drones_around()
 
         for point in self.fov:
-            if self.simulation.tile_dict[point].with_oil:
+            if self.clean_waters.tile_dict[point].with_oil:
                 points_of_interest[0].append(point)
 
-            elif self.simulation.tile_dict[point].__class__ == Recharger and self.needs_recharge():
+            elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge():
                 points_of_interest[1].append(point)
 
         if points_of_interest[0] or points_of_interest[1]:
