@@ -35,7 +35,7 @@ class Point:
     y: int
 
     def distance_to(self, to_point):
-        return sqrt((to_point.x - self.x) ** 2 + (to_point.y - self.y) ** 2)
+        return abs(self.x-to_point.x) + abs(self.y-to_point.y)
 
     def closest_point_from_tiles(self, tiles):
         point = tiles[0].point
@@ -110,3 +110,19 @@ def number_of_steps_from_x_to_y(origin: Point, destiny: Point) -> int:
 
 def random_direction():
     return random.choice([Direction.South, Direction.North, Direction.West, Direction.East])
+
+
+def give_directions(curr_point, ps: list) -> list:
+    directions = []
+    for p in ps:
+        if len(directions) == 4:
+            break
+        if p.x > curr_point.x and Direction.West not in directions:
+            directions.append(Direction.West)
+        if p.x < curr_point.x and Direction.East not in directions:
+            directions.append(Direction.East)
+        if p.y > curr_point.y and Direction.South not in directions:
+            directions.append(Direction.South)
+        if p.y < curr_point.y and Direction.North not in directions:
+            directions.append(Direction.North)
+    return directions

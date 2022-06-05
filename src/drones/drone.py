@@ -1,17 +1,20 @@
 import pygame
+
+from environment.tile import Recharger
 from utils.settings import *
 import math
+import random
 from abc import ABC, abstractmethod
-from utils.util import Point
+from utils.util import Point, give_directions, random_direction
 from utils.util import Direction
 
 
 class Drone(pygame.sprite.Sprite, ABC):
-    def __init__(self, clean_waters, x, y):
+    def __init__(self, clean_waters, x, y, color):
         super().__init__()
         self.clean_waters = clean_waters
         self.image = pygame.Surface((DRONESIZE, DRONESIZE))
-        self.image.fill(YELLOW)
+        self.image.fill(color)
         self.rect = self.image.get_rect()
         self.point = Point(x, y)
         self.rect.center = \
@@ -86,6 +89,33 @@ class Drone(pygame.sprite.Sprite, ABC):
     def see_drones_around(self) -> list:
         return [drone.point for drone in self.clean_waters.drone_list
                 if math.dist([self.point.x, self.point.y], [drone.point.x, drone.point.y]) == 1]
+
+    def reactive_movement(self):
+        # 0 -> oil/ 1-> battery
+        points_of_interest = [[], []]
+        all_directions = [Direction.West, Direction.East, Direction.South, Direction.North]
+        drones_around = self.see_drones_around()
+
+        for point in self.fov:
+            if self.clean_waters.tile_dict[point].with_oil:
+                points_of_interest[0].append(point)
+
+            elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge():
+                points_of_interest[1].append(point)
+
+        if points_of_interest[0] or points_of_interest[1]:
+            direction_lists = [give_directions(self.point, points_of_interest[0]),
+                               give_directions(self.point, points_of_interest[1])]
+
+            for direction_list in direction_lists:
+                dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]  # dont collide with other
+                if dirs:
+                    self.move(random.choice(dirs))
+                    return
+
+        temp = [d for d in all_directions if d not in give_directions(self.point, drones_around)]
+
+        self.move(random_direction()) if temp else self.move(-1)
 
     @abstractmethod
     def agent_decision(self):

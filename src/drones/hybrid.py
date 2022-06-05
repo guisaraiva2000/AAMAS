@@ -91,7 +91,7 @@ class DroneHybrid(Drone):
             if self.map[point].with_oil and point not in self.points_on_fire:
                 self.points_on_fire.append(point)
                 for sec in self.clean_waters.sector_list:
-                    if point in sec.sectorTiles and sec not in self.sectors_on_fire:
+                    if point in sec.sectorPoints and sec not in self.sectors_on_fire:
                         self.sectors_on_fire.append(sec)
 
     def deliberate(self) -> None:
@@ -101,7 +101,7 @@ class DroneHybrid(Drone):
         if self.needs_recharge():
             desires.append(Desire.Recharge)
         if self.sector_on_fire():
-            if self.point not in self.sectors_on_fire[0].sectorTiles:
+            if self.point not in self.sectors_on_fire[0].sectorPoints:
                 desires.append(Desire.Move_to_Sector)
             else:
                 desires.append(Desire.Clean_Water)
@@ -118,7 +118,7 @@ class DroneHybrid(Drone):
                               "Point": self.most_interest_point()}
         elif Desire.Move_to_Sector in desires:
             self.intention = {"Desire": Desire.Move_to_Sector,
-                              "Point": self.point.closest_point_from_points(self.sectors_on_fire[0].sectorTiles)}
+                              "Point": self.point.closest_point_from_points(self.sectors_on_fire[0].sectorPoints)}
         else:
             point = random.choice([p for p in self.fov if p != self.point])
             self.intention = {"Desire": Desire.Find_Fire, "Point": point}
@@ -209,7 +209,7 @@ class DroneHybrid(Drone):
 
     def get_maximized_dists_point(self, points: List[Point]) -> Point:
         # filtered by sector
-        drones_in_sector = [p for p in self.drone_positions_list() if p in self.sectors_on_fire[0].sectorTiles]
+        drones_in_sector = [p for p in self.drone_positions_list() if p in self.sectors_on_fire[0].sectorPoints]
         if not drones_in_sector: return points[0]
 
         point = points[0]
@@ -226,8 +226,8 @@ class DroneHybrid(Drone):
             self.visited_sector_tiles.append(self.point)
         non_visited = [p for p in self.fov if p not in self.visited_sector_tiles]
         # filtered by sector and fire
-        on_fire = [p for p in non_visited if self.map[p].with_oil and p in self.sectors_on_fire[0].sectorTiles]
-        not_on_fire = [p for p in non_visited if p in self.sectors_on_fire[0].sectorTiles]
+        on_fire = [p for p in non_visited if self.map[p].with_oil and p in self.sectors_on_fire[0].sectorPoints]
+        not_on_fire = [p for p in non_visited if p in self.sectors_on_fire[0].sectorPoints]
         interests = (not_on_fire, on_fire)[len(on_fire) > 0]
 
         # filtered by priority

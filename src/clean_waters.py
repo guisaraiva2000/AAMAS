@@ -1,7 +1,9 @@
 import math
 
 from drones.greedy import DroneGreedy
+from drones.greedy_w_roles import DroneGreedyRoles
 from drones.random import DroneRandom
+from drones.scanner import DroneScanner
 from environment.map import *
 from drones.hybrid import DroneHybrid
 from environment.oil import *
@@ -39,6 +41,10 @@ class CleanWaters:
         self.greedy_drone_button = None
         self.create_greedy_drone = False
 
+        # button and var that says to create greedy drones
+        self.greedy_w_roles_drone_button = None
+        self.create_greedy_w_roles_drone = False
+
         # button and var that indicates to create hybrid drones
         self.hybrid_drone_button = None
         self.create_hybrid_drone = False
@@ -46,6 +52,9 @@ class CleanWaters:
         # button and var that indicates to create hybrid coop drones
         self.random_drone_button = None
         self.create_random_drone = False
+
+        # var that says to create scanner drones
+        self.create_scanner_drone = False
 
         self.drone_not_chosen = True
 
@@ -102,6 +111,7 @@ class CleanWaters:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.random_drone_button.is_over(mouse_position):
                     self.create_random_drone = True
+                    self.create_scanner_drone = False
                     self.create_greedy_drone = False
                     self.create_hybrid_drone = False
                     self.drone_not_chosen = False
@@ -109,6 +119,16 @@ class CleanWaters:
                         self.create_oil_spills()
                 if self.greedy_drone_button.is_over(mouse_position):
                     self.create_greedy_drone = True
+                    self.create_scanner_drone = True
+                    self.create_hybrid_drone = False
+                    self.create_random_drone = False
+                    self.drone_not_chosen = False
+                    if not self.oil_list:
+                        self.create_oil_spills()
+                if self.greedy_w_roles_drone_button.is_over(mouse_position):
+                    self.create_greedy_w_roles_drone = True
+                    self.create_greedy_drone = False
+                    self.create_scanner_drone = False
                     self.create_hybrid_drone = False
                     self.create_random_drone = False
                     self.drone_not_chosen = False
@@ -121,8 +141,6 @@ class CleanWaters:
                     self.drone_not_chosen = False
                     if not self.oil_list:
                         self.create_oil_spills()
-
-    # Create things
 
     def create_tiles(self):
         for y in range(0, 32, 1):
@@ -194,6 +212,37 @@ class CleanWaters:
         self.drone_group.add(drone)
         self.drone_list.append(drone)"""
 
+    def create_greedy_w_roles_drones(self):
+        drone = DroneGreedyRoles(self, 6, 6, 0)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneGreedyRoles(self, 10, 10, 1)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneGreedyRoles(self, 14, 14, 2)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneGreedyRoles(self, 18, 18, 3)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneGreedyRoles(self, 22, 22, 4)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneGreedyRoles(self, 26, 26, 5)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+
+    def create_scanner_drones(self):
+        drone = DroneScanner(self, 8, 24)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneScanner(self, 16, 16)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+        drone = DroneScanner(self, 22, 10)
+        self.drone_group.add(drone)
+        self.drone_list.append(drone)
+
     def create_hybrid_drones(self):
         drone = DroneHybrid(self, 16, 16, self.hybrid_drone_map)
         self.drone_group.add(drone)
@@ -221,7 +270,7 @@ class CleanWaters:
         self.drone_list.append(drone)
 
     def create_sectors(self):
-        sector_id = 1
+        sector_id = 0
         sector_size = 8
         for y in range(0, 32 // sector_size, 1):
             for x in range(0, 32 // sector_size, 1):
@@ -246,6 +295,7 @@ class CleanWaters:
     def create_buttons(self):
         self.random_drone_button = Button(WHITE, 40, 29, 180, 30, 'Random Drones')
         self.greedy_drone_button = Button(WHITE, 40, 79, 180, 30, 'Greedy Drones')
+        self.greedy_w_roles_drone_button = Button(WHITE, 40, 139, 180, 30, 'Role Drones')
         self.hybrid_drone_button = Button(WHITE, 600, 40, 160, 30, 'Start with hybrid drones')
 
     def draw(self):
@@ -287,6 +337,7 @@ class CleanWaters:
 
     def draw_buttons(self):
         self.greedy_drone_button.draw(self.screen)
+        self.greedy_w_roles_drone_button.draw(self.screen)
         self.random_drone_button.draw(self.screen)
         self.wind_display.draw(self.screen)
         # self.hybrid_drone_button.draw(self.screen)
@@ -315,11 +366,17 @@ class CleanWaters:
         if self.create_greedy_drone:
             self.create_greedy_drones()
 
+        if self.create_greedy_w_roles_drone:
+            self.create_greedy_w_roles_drones()
+
         if self.create_hybrid_drone:
             self.create_hybrid_drones()
 
         if self.create_random_drone:
             self.create_random_drones()
+
+        if self.create_scanner_drone:
+            self.create_scanner_drones()
 
         self.draw_drones()
         pygame.display.flip()
@@ -335,6 +392,10 @@ class CleanWaters:
 
         if n_tiles_w_oil >= math.pow(GRID_W / TILESIZE, 2) / 2:
             print("Oil Covered Half Ocean")
+            return True
+
+        if n_tiles_w_oil == 0:
+            print("All Oil Was Cleaned")
             return True
 
         return False
