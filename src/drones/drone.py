@@ -5,7 +5,7 @@ from utils.settings import *
 import math
 import random
 from abc import ABC, abstractmethod
-from utils.util import Point, give_directions, random_direction
+from utils.util import Point, give_directions, random_direction, all_directions
 from utils.util import Direction
 
 
@@ -63,8 +63,7 @@ class Drone(pygame.sprite.Sprite, ABC):
 
     def calculate_fov(self) -> list:
         fov = []
-        x = self.point.x
-        y = self.point.y
+        x, y = self.point.x, self.point.y
 
         for i in range(y - self.fov_range, y + self.fov_range + 1):
             for j in range(x - self.fov_range + 1, x + self.fov_range + 1):
@@ -74,8 +73,8 @@ class Drone(pygame.sprite.Sprite, ABC):
         return fov
 
     def clean_water(self) -> None:
-        tile = self.clean_waters.tile_dict[self.point]
-        tile.with_oil = False
+        self.clean_waters.tile_dict[self.point].with_oil = False
+        self.clean_waters.scanned_poi_tiles.pop(self.point, None)
 
         self.spend_energy()
         self.is_dead()
@@ -92,30 +91,31 @@ class Drone(pygame.sprite.Sprite, ABC):
 
     def reactive_movement(self):
         # 0 -> oil/ 1-> battery
-        points_of_interest = [[], []]
-        all_directions = [Direction.West, Direction.East, Direction.South, Direction.North]
+        direction_lists = poi = [[], []]
         drones_around = self.see_drones_around()
+        scanned_poi = list(self.clean_waters.scanned_poi_tiles.keys())
+        observed_points = scanned_poi + self.fov if scanned_poi else self.fov
 
-        for point in self.fov:
+        for point in observed_points:
             if self.clean_waters.tile_dict[point].with_oil:
-                points_of_interest[0].append(point)
+                poi[0].append(point)
 
             elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge():
-                points_of_interest[1].append(point)
+                poi[1].append(point)
 
-        if points_of_interest[0] or points_of_interest[1]:
-            direction_lists = [give_directions(self.point, points_of_interest[0]),
-                               give_directions(self.point, points_of_interest[1])]
+        if poi[0]:
+            direction_lists[0] = give_directions(self.point, [self.point.closest_point_from_points(poi[0])])
+        if poi[1]:
+            direction_lists[1] = give_directions(self.point, [self.point.closest_point_from_points(poi[1])])
 
-            for direction_list in direction_lists:
-                dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]  # dont collide with other
-                if dirs:
-                    self.move(random.choice(dirs))
-                    return
+        for direction_list in direction_lists:
+            dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]
+            if dirs:
+                self.move(random.choice(dirs))
+                return
 
-        temp = [d for d in all_directions if d not in give_directions(self.point, drones_around)]
-
-        self.move(random_direction()) if temp else self.move(-1)
+        not_poi = [d for d in all_directions if d not in give_directions(self.point, drones_around)]
+        self.move(random_direction()) if not_poi else self.move(-1)
 
     @abstractmethod
     def agent_decision(self):

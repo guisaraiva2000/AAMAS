@@ -1,8 +1,6 @@
 from drones.drone import Drone
-import random
 from utils.settings import FOV_CLEANER_RANGE, YELLOW
 from environment.tile import Recharger
-from utils.util import Direction, random_direction
 
 
 class DroneGreedy(Drone):
@@ -22,7 +20,7 @@ class DroneGreedy(Drone):
         return
 
     def needs_recharge(self) -> bool:
-        return self.battery <= 50
+        return self.battery <= 150
 
     def target_moving(self) -> None:
         self.reactive_movement()

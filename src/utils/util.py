@@ -1,8 +1,7 @@
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from math import sqrt
-from collections import deque
+from typing import List
 
 
 class Direction(Enum):
@@ -12,21 +11,7 @@ class Direction(Enum):
     West = 4
 
 
-class Node:
-    def __init__(self, x, y, parent):
-        self.x = x
-        self.y = y
-        self.parent = parent
-
-    def __repr__(self):
-        return str((self.x, self.y))
-
-
-# Utility function to print path from source to destination
-def print_path_point(node):
-    if node is None:
-        return []
-    return [Point(node.x, node.y)] + print_path_point(node.parent)
+all_directions = [Direction.North, Direction.South, Direction.East, Direction.West]
 
 
 @dataclass(order=True, repr=True, frozen=True)
@@ -35,81 +20,19 @@ class Point:
     y: int
 
     def distance_to(self, to_point):
-        return abs(self.x-to_point.x) + abs(self.y-to_point.y)
-
-    def closest_point_from_tiles(self, tiles):
-        point = tiles[0].point
-
-        for tile in tiles:
-            point = (point, tile.point)[self.distance_to(tile.point) < self.distance_to(point)]
-
-        return point
+        return abs(self.x - to_point.x) + abs(self.y - to_point.y)
 
     def closest_point_from_points(self, points):
-        point = points[0]
-
-        for p in points:
-            point = (point, p)[self.distance_to(p) < self.distance_to(point)]
-
-        return point
-
-    def find_path_bfs_from(self, from_point, tiles):
-        # The function returns false if pt is not a valid position
-        def is_valid(point: Point):
-            if point.x < 0 or point.x > 31 or point.y < 0 or point.y > 31:
-                return False
-            return tiles[point].path_able
-
-        # create a queue and enqueue the first node
-        q = deque()
-        src = Node(from_point.x, from_point.y, None)
-        q.append(src)
- 
-        # set to check if the matrix cell is visited before or not
-        visited = [from_point]
-
-        # Below lists detail all four possible movements from a cell
-        row = (-1, 0, 0, 1)
-        col = (0, -1, 1, 0)
- 
-        # loop till queue is empty
-        while q:
-            # dequeue front node and process it
-            curr = q.popleft()
- 
-            # return if the destination is found
-            if curr.x == self.x and curr.y == self.y:
-                return curr
- 
-            # check all four possible movements from the current cell
-            # and recur for each valid movement
-            for k in range(4):
-                adj_point = Point(curr.x + row[k], curr.y + col[k])
-                # check if it is possible to go to the next position
-                # from the current position
-                if is_valid(adj_point):
-                    # construct the next cell node
-                    next_node = Node(adj_point.x, adj_point.y, curr)
- 
-                    # if it isn't visited yet
-                    if adj_point not in visited:
-                        # enqueue it and mark it as visited
-                        q.append(next_node)
-                        visited.append(adj_point)
- 
-        # return None if the path is not possible
-        return None
+        return min(points, key=lambda point: self.distance_to(point))
 
 
-def number_of_steps_from_x_to_y(origin: Point, destiny: Point) -> int:
-    number_of_steps_x = destiny.x - origin.x if destiny.x - origin.x > 0 else -(destiny.x - origin.x)
-    number_of_steps_y = destiny.y - origin.y if destiny.y - origin.y > 0 else -(destiny.y - origin.y)
-
-    return number_of_steps_y + number_of_steps_x
+def potential_function(drone_point: Point, oil_points: List[Point]) -> int:
+    closest_point = drone_point.closest_point_from_points(oil_points)
+    return -drone_point.distance_to(closest_point)
 
 
 def random_direction():
-    return random.choice([Direction.South, Direction.North, Direction.West, Direction.East])
+    return random.choice(all_directions)
 
 
 def give_directions(curr_point, ps: list) -> list:
@@ -126,3 +49,10 @@ def give_directions(curr_point, ps: list) -> list:
         if p.y < curr_point.y and Direction.North not in directions:
             directions.append(Direction.North)
     return directions
+
+
+def is_oil_scanned(oil_spill_points, scanned_oil_spills_dict, drone_fov):
+    for oil_point in oil_spill_points:
+        if oil_point in scanned_oil_spills_dict or oil_point in drone_fov:
+            return True
+    return False

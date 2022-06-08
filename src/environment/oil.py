@@ -1,6 +1,8 @@
 import random
 from dataclasses import dataclass, field
-from utils.util import Direction
+from typing import List
+
+from utils.util import Direction, all_directions
 from environment.tile import *
 
 
@@ -18,6 +20,7 @@ class Oil:
     points: List[Point] = field(default_factory=list, compare=False)
     tiles: List[Tile] = field(default_factory=list, compare=False)
     stop_time: int = field(default=0, compare=False)
+    detected: bool = field(default=False, compare=False)
 
     def __str__(self):
         return "Oil ID: " + str(self.oid) \
@@ -36,7 +39,7 @@ def update_oil(oil: Oil) -> None:
 
 
 def expand_oil(oil: Oil, tile_dict: dict, wind: Wind) -> None:
-    direct = [Direction.North, Direction.South, Direction.East, Direction.West] + (wind.strength - 1) * [wind.direction]
+    direct = all_directions + (wind.strength - 1) * [wind.direction]
     types = [Ocean, Recharger]
     new_tiles = []
 

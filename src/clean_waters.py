@@ -1,15 +1,17 @@
 import math
+import random
 
 from drones.greedy import DroneGreedy
 from drones.greedy_w_roles import DroneGreedyRoles
 from drones.random import DroneRandom
 from drones.scanner import DroneScanner
 from environment.map import *
-from drones.hybrid import DroneHybrid
 from environment.oil import *
 from environment.sector import *
 from utils.button import *
 import time
+
+from utils.util import all_directions
 
 
 class CleanWaters:
@@ -20,21 +22,15 @@ class CleanWaters:
         self.tile_group = pygame.sprite.Group()  # use to draw and do update to tiles
         self.drone_group = pygame.sprite.Group()  # use to draw and do update to drones
         self.tile_dict = {}  # to save created tiles
-        self.hybrid_drone_map = {}  # none actualized tile map for hybrid drone
+        self.scanned_poi_tiles = {}
         self.drone_list = []
-        self.wind = Wind(
-            random.choice([Direction.North, Direction.South, Direction.East, Direction.West]),
-            random.randint(1, 10))
+        self.wind = Wind(random.choice(all_directions), 5)  # random.randint(1, 10))
         self.wind_display = Button(PURPLE, 40, 450, 180, 30,
                                    "Wind direction: " + str(self.wind.direction).split(".")[1])
         self.oil_list: List[Oil] = []
         self.sector_list: List[Sector] = []
         self.recharger_list: List[Tile] = []
 
-        self.hybrid_drone_sectors_on_fire: List[Sector] = []
-        self.hybrid_drone_points_on_fire: List[Point] = []
-
-        # button, step counter and variable that make sim do one step in step mode
         self.step_counter = 0
 
         # button and var that says to create greedy drones
@@ -45,11 +41,7 @@ class CleanWaters:
         self.greedy_w_roles_drone_button = None
         self.create_greedy_w_roles_drone = False
 
-        # button and var that indicates to create hybrid drones
-        self.hybrid_drone_button = None
-        self.create_hybrid_drone = False
-
-        # button and var that indicates to create hybrid coop drones
+        # button and var that indicates to create random drones
         self.random_drone_button = None
         self.create_random_drone = False
 
@@ -63,7 +55,10 @@ class CleanWaters:
         while self.drone_not_chosen and self.playing and self.running:
             self.check_events()
         self.init_and_draw_drones()
+
         time.sleep(0.5)
+        can_expand_oil = True
+
         while self.playing:
             self.step_counter += 1
 
@@ -76,26 +71,25 @@ class CleanWaters:
                     self.check_events()
                 break
 
-            self.check_events()
-
             for agent in self.drone_list:
                 agent.agent_decision()
 
+            active_oil_spill_counter = len(self.oil_list)
             for oil in self.oil_list:
                 update_oil(oil)
-                expand_oil(oil, self.tile_dict, self.wind)
-                if not oil.stop_time and not len(oil.tiles):
-                    oil.stop_time = self.step_counter
 
-            for sector in self.sector_list:
-                if sector.calculate_oil_alert(self.oil_list):
-                    print("Oil detected in sector " + str(sector.sectorID))
-                    self.hybrid_drone_sectors_on_fire.append(sector)
+                if can_expand_oil:
+                    expand_oil(oil, self.tile_dict, self.wind)
 
-                if not sector.withOil and sector in self.hybrid_drone_sectors_on_fire:
-                    # remove sector from drone list
-                    self.hybrid_drone_sectors_on_fire.remove(sector)
+                if not len(oil.tiles):
+                    active_oil_spill_counter -= 1
+                    if not oil.stop_time:
+                        oil.stop_time = self.step_counter
 
+            if active_oil_spill_counter < random.randint(2, 3):
+                self.create_oil_spills()
+
+            can_expand_oil = not can_expand_oil  # expand every two steps only
             self.update()
             self.draw()
             time.sleep(0.1)
@@ -113,29 +107,19 @@ class CleanWaters:
                     self.create_random_drone = True
                     self.create_scanner_drone = False
                     self.create_greedy_drone = False
-                    self.create_hybrid_drone = False
                     self.drone_not_chosen = False
                     if not self.oil_list:
                         self.create_oil_spills()
                 if self.greedy_drone_button.is_over(mouse_position):
                     self.create_greedy_drone = True
                     self.create_scanner_drone = True
-                    self.create_hybrid_drone = False
                     self.create_random_drone = False
                     self.drone_not_chosen = False
                     if not self.oil_list:
                         self.create_oil_spills()
                 if self.greedy_w_roles_drone_button.is_over(mouse_position):
                     self.create_greedy_w_roles_drone = True
-                    self.create_greedy_drone = False
-                    self.create_scanner_drone = False
-                    self.create_hybrid_drone = False
-                    self.create_random_drone = False
-                    self.drone_not_chosen = False
-                    if not self.oil_list:
-                        self.create_oil_spills()
-                if self.hybrid_drone_button.is_over(mouse_position):
-                    self.create_hybrid_drone = True
+                    self.create_scanner_drone = True
                     self.create_greedy_drone = False
                     self.create_random_drone = False
                     self.drone_not_chosen = False
@@ -152,7 +136,6 @@ class CleanWaters:
                     tile = Ocean(self, x, y)
                 self.tile_group.add(tile)
                 self.tile_dict[tile.point] = tile
-                self.hybrid_drone_map[tile.point] = tile
 
     def create_random_drones(self):
         drone = DroneRandom(self, 6, 6)
@@ -243,60 +226,29 @@ class CleanWaters:
         self.drone_group.add(drone)
         self.drone_list.append(drone)
 
-    def create_hybrid_drones(self):
-        drone = DroneHybrid(self, 16, 16, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        """drone = DroneHybrid(self, 15, 16, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneHybrid(self, 17, 16, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneHybrid(self, 15, 17, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneHybrid(self, 16, 17, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)"""
-        drone = DroneHybrid(self, 17, 17, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        """drone = DroneHybrid(self, 15, 18, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)"""
-        drone = DroneHybrid(self, 16, 18, self.hybrid_drone_map)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-
     def create_sectors(self):
         sector_id = 0
         sector_size = 8
         for y in range(0, 32 // sector_size, 1):
             for x in range(0, 32 // sector_size, 1):
-                # id, probability per oil, size
-                sector = Sector(sector_id, 16 / 64, sector_size)
+                sector = Sector(self, sector_id, sector_size)
                 sector_id += 1
                 sector.create_sector(x * sector_size, y * sector_size)
                 self.sector_list.append(sector)
 
     def create_oil_spills(self):
-        rng = random.randint(1, 3)
-        print(f"Oil count: {rng}")
-        for i in range(1, rng + 1):
-            lst = [x for x in self.tile_dict.values() if x.__class__ == Ocean]
-            point = random.choice(lst).point
-            oil_spill = self.tile_dict[point]
-            oil = Oil(i, point, 1)
-            oil_spill.with_oil = True
-            oil.add_oil(oil_spill)
-            self.oil_list.append(oil)
+        lst = [x for x in self.tile_dict.values() if x.__class__ == Ocean]
+        point = random.choice(lst).point
+        oil_spill = self.tile_dict[point]
+        oil = Oil(len(self.oil_list), point, 1)
+        oil_spill.with_oil = True
+        oil.add_oil(oil_spill)
+        self.oil_list.append(oil)
 
     def create_buttons(self):
         self.random_drone_button = Button(WHITE, 40, 29, 180, 30, 'Random Drones')
         self.greedy_drone_button = Button(WHITE, 40, 79, 180, 30, 'Greedy Drones')
-        self.greedy_w_roles_drone_button = Button(WHITE, 40, 139, 180, 30, 'Role Drones')
-        self.hybrid_drone_button = Button(WHITE, 600, 40, 160, 30, 'Start with hybrid drones')
+        self.greedy_w_roles_drone_button = Button(WHITE, 40, 129, 180, 30, 'Role Drones')
 
     def draw(self):
         self.update_tiles()
@@ -340,7 +292,6 @@ class CleanWaters:
         self.greedy_w_roles_drone_button.draw(self.screen)
         self.random_drone_button.draw(self.screen)
         self.wind_display.draw(self.screen)
-        # self.hybrid_drone_button.draw(self.screen)
 
     def update(self):
         self.tile_group.update()
@@ -369,9 +320,6 @@ class CleanWaters:
         if self.create_greedy_w_roles_drone:
             self.create_greedy_w_roles_drones()
 
-        if self.create_hybrid_drone:
-            self.create_hybrid_drones()
-
         if self.create_random_drone:
             self.create_random_drones()
 
@@ -386,16 +334,9 @@ class CleanWaters:
             print("All Drones Died")
             return True
 
-        n_tiles_w_oil = 0
-        for oil in self.oil_list:
-            n_tiles_w_oil += len(oil.tiles)
-
+        n_tiles_w_oil = sum([len(oil.tiles) for oil in self.oil_list])
         if n_tiles_w_oil >= math.pow(GRID_W / TILESIZE, 2) / 2:
             print("Oil Covered Half Ocean")
-            return True
-
-        if n_tiles_w_oil == 0:
-            print("All Oil Was Cleaned")
             return True
 
         return False

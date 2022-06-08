@@ -1,7 +1,7 @@
 # define some colors (R, G, B)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GREEN = (0, 204, 0)
+GREEN = (0, 135, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 BLUE = (0, 191, 255)
@@ -28,7 +28,7 @@ TILESIZE = 16
 
 # constants of the drone
 DRONESIZE = 12
-BATTERY = 100
+BATTERY = 500
 MOVEBATTERYCOST = 1
 
 # limits
@@ -39,4 +39,4 @@ MAX_OIL = 10
 
 FOV_DEFAULT_RANGE = 1
 FOV_CLEANER_RANGE = 3
-FOV_SCANNER_RANGE = 6
+FOV_SCANNER_RANGE = 32

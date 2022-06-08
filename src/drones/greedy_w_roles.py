@@ -1,12 +1,9 @@
-import numpy as np
-
-from drones.drone import Drone
 import random
-
-from environment.sector import Sector
+import numpy as np
+from drones.drone import Drone
 from environment.tile import Recharger
 from utils.settings import FOV_CLEANER_RANGE, YELLOW
-from utils.util import Direction, random_direction, Point, give_directions
+from utils.util import give_directions, is_oil_scanned, potential_function
 
 
 class DroneGreedyRoles(Drone):
@@ -16,30 +13,27 @@ class DroneGreedyRoles(Drone):
         self.role = None
         self.drone_id = drone_id
 
-    def potential_function(self, drone_point: Point, sector: int, sector_list: list) -> int:
-        sector_points_w_oil = [point for point in sector_list[sector].sectorPoints
-                               if self.clean_waters.tile_dict[point].with_oil]
-        closest_point = drone_point.closest_point_from_points(sector_points_w_oil)
-        return -drone_point.distance_to(closest_point)
-
     def role_assignment(self):
-        sector_list = [sector for sector in self.clean_waters.sector_list if sector.has_oil(self.clean_waters.tile_dict)]
-        n_sectors = len(sector_list)
-        drone_list = self.clean_waters.drone_list
+        oil_spills = [oil for oil in self.clean_waters.oil_list
+                      if len(oil.tiles) and is_oil_scanned(oil.points, self.clean_waters.scanned_poi_tiles, self.fov)]
+        n_oil_spills = len(oil_spills)
+        drone_list = [drone for drone in self.clean_waters.drone_list if drone.__class__ == self.__class__]
         n_drones = len(drone_list)
 
-        if sector_list:
-            # Calculate potentials for all drones and roles (sectors).
-            potentials = np.zeros((n_drones, n_sectors))
-            for drone in range(n_drones):
-                for sector_id in range(n_sectors):
-                    potentials[drone, sector_id] = self.potential_function(drone_list[drone].point, sector_id,
-                                                                           sector_list)
+        if n_oil_spills:
+            # Calculate potentials for all drones and roles (oil spill).
+            potentials = np.zeros((n_oil_spills, n_drones))
+            for oil_idx in range(n_oil_spills):
+                for drone in range(n_drones):
+                    potentials[oil_idx, drone] = potential_function(drone_list[drone].point, oil_spills[oil_idx].points)
 
-            drone_roles = np.zeros(n_drones, dtype=Sector)
-            for drone in range(n_drones):
-                sector_id = np.argmax(potentials[drone])
-                drone_roles[drone] = sector_list[sector_id]
+            drone_roles = {}
+            for oil_idx in range(n_oil_spills):
+                n_split_drones = n_drones // n_oil_spills
+                closest_drones = np.argpartition(potentials[oil_idx], -n_split_drones)[-n_split_drones:]
+                for drone in closest_drones:
+                    drone_roles[drone_list[drone]] = oil_spills[oil_idx]
+                    potentials[:, drone] = -999
 
             return drone_roles
 
@@ -52,25 +46,27 @@ class DroneGreedyRoles(Drone):
 
         else:
             role_assignments = self.role_assignment()
-            if role_assignments is not None:
-                self.role = role_assignments[self.drone_id]
+            if role_assignments is not None and self in role_assignments:
+                self.role = role_assignments[self]
+            elif self.role is not None:
+                self.role = None
+
             self.target_moving()
         return
 
     def needs_recharge(self) -> bool:
-        return self.battery <= 50
+        return self.battery <= 150
 
     def target_moving(self) -> None:
         drones_around = self.see_drones_around()
 
         if self.role is not None:
-            sector_points_w_oil = [point for point in self.role.sectorPoints
-                                   if self.clean_waters.tile_dict[point].with_oil]
-            if sector_points_w_oil and self.point not in sector_points_w_oil:
-                dir_list = give_directions(self.point, [self.point.closest_point_from_points(sector_points_w_oil)])
-                dirs = [d for d in dir_list if d not in give_directions(self.point, drones_around)]
-                if dirs:
-                    self.move(random.choice(dirs))
-                    return
+            oil_points = [oil for oil in self.role.points
+                          if oil in self.clean_waters.scanned_poi_tiles or oil in self.fov]
+            dir_list = give_directions(self.point, [self.point.closest_point_from_points(oil_points)])
+            dirs = [d for d in dir_list if d not in give_directions(self.point, drones_around)]
+            if dirs:
+                self.move(random.choice(dirs))
+                return
 
         self.reactive_movement()
