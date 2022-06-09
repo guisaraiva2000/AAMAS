@@ -42,10 +42,10 @@ class Drone(pygame.sprite.Sprite, ABC):
             drone_points.append(drone.point)
 
         point = self.point
-        if direction == Direction.West and self.point.x < 31:
-            point = Point(self.point.x + 1, self.point.y)
-        elif direction == Direction.East and self.point.x > 0:
+        if direction == Direction.West and self.point.x > 0:
             point = Point(self.point.x - 1, self.point.y)
+        elif direction == Direction.East and self.point.x < 31:
+            point = Point(self.point.x + 1, self.point.y)
         elif direction == Direction.South and self.point.y < 31:
             point = Point(self.point.x, self.point.y + 1)
         elif self.point.y > 0:
@@ -67,7 +67,7 @@ class Drone(pygame.sprite.Sprite, ABC):
 
         for i in range(y - self.fov_range, y + self.fov_range + 1):
             for j in range(x - self.fov_range + 1, x + self.fov_range + 1):
-                if not (i < 0 or i > 31 or j < 0 or j > 31):
+                if not (i < 0 or i > 31 or j < 0 or j > 31 or i == y or j ==x):
                     fov.append(Point(j, i))
 
         return fov

@@ -8,6 +8,7 @@ class DroneScanner(Drone):
     def __init__(self, clean_waters, x, y):
         super().__init__(clean_waters, x, y, GREEN)
         self.fov_range = FOV_SCANNER_RANGE
+        self.battery = 9999
 
     def agent_decision(self):
         for point in self.fov:

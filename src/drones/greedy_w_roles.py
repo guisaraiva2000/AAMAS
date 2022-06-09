@@ -15,12 +15,13 @@ class DroneGreedyRoles(Drone):
 
     def role_assignment(self):
         oil_spills = [oil for oil in self.clean_waters.oil_list
-                      if len(oil.tiles) and is_oil_scanned(oil.points, self.clean_waters.scanned_poi_tiles, self.fov)]
+                      if not oil.stop_time and is_oil_scanned(oil.points, self.clean_waters.scanned_poi_tiles, self.fov)]
+        oil_spills.reverse()
         n_oil_spills = len(oil_spills)
         drone_list = [drone for drone in self.clean_waters.drone_list if drone.__class__ == self.__class__]
         n_drones = len(drone_list)
 
-        if n_oil_spills:
+        if n_oil_spills and n_drones:
             # Calculate potentials for all drones and roles (oil spill).
             potentials = np.zeros((n_oil_spills, n_drones))
             for oil_idx in range(n_oil_spills):
@@ -30,6 +31,7 @@ class DroneGreedyRoles(Drone):
             drone_roles = {}
             for oil_idx in range(n_oil_spills):
                 n_split_drones = n_drones // n_oil_spills
+                n_split_drones = 1 if n_split_drones == 0 else n_split_drones
                 closest_drones = np.argpartition(potentials[oil_idx], -n_split_drones)[-n_split_drones:]
                 for drone in closest_drones:
                     drone_roles[drone_list[drone]] = oil_spills[oil_idx]

@@ -57,8 +57,6 @@ class CleanWaters:
         self.init_and_draw_drones()
 
         time.sleep(0.5)
-        can_expand_oil = True
-
         while self.playing:
             self.step_counter += 1
 
@@ -76,23 +74,21 @@ class CleanWaters:
 
             active_oil_spill_counter = len(self.oil_list)
             for oil in self.oil_list:
-                update_oil(oil)
-
-                if can_expand_oil:
-                    expand_oil(oil, self.tile_dict, self.wind)
-
+                oil.update_oil()
+                oil.expand_oil(self.tile_dict, self.wind)
                 if not len(oil.tiles):
                     active_oil_spill_counter -= 1
                     if not oil.stop_time:
                         oil.stop_time = self.step_counter
 
-            if active_oil_spill_counter < random.randint(2, 3):
+            if active_oil_spill_counter < 3:
                 self.create_oil_spills()
 
-            can_expand_oil = not can_expand_oil  # expand every two steps only
+            print(len(self.oil_list))
+
             self.update()
             self.draw()
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
         while self.drone_not_chosen and self.playing and self.running:
             self.check_events()
@@ -314,6 +310,9 @@ class CleanWaters:
         self.create_sectors()
 
     def init_and_draw_drones(self):
+        if self.create_scanner_drone:
+            self.create_scanner_drones()
+
         if self.create_greedy_drone:
             self.create_greedy_drones()
 
@@ -322,9 +321,6 @@ class CleanWaters:
 
         if self.create_random_drone:
             self.create_random_drones()
-
-        if self.create_scanner_drone:
-            self.create_scanner_drones()
 
         self.draw_drones()
         pygame.display.flip()

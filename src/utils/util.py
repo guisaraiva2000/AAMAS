@@ -1,3 +1,4 @@
+import math
 import random
 from dataclasses import dataclass
 from enum import Enum
@@ -20,13 +21,13 @@ class Point:
     y: int
 
     def distance_to(self, to_point):
-        return abs(self.x - to_point.x) + abs(self.y - to_point.y)
+        return math.dist((self.x, self.y), (to_point.x, to_point.y))
 
     def closest_point_from_points(self, points):
         return min(points, key=lambda point: self.distance_to(point))
 
 
-def potential_function(drone_point: Point, oil_points: List[Point]) -> int:
+def potential_function(drone_point: Point, oil_points: List[Point]) -> float:
     closest_point = drone_point.closest_point_from_points(oil_points)
     return -drone_point.distance_to(closest_point)
 
@@ -40,9 +41,9 @@ def give_directions(curr_point, ps: list) -> list:
     for p in ps:
         if len(directions) == 4:
             break
-        if p.x > curr_point.x and Direction.West not in directions:
+        if p.x < curr_point.x and Direction.West not in directions:
             directions.append(Direction.West)
-        if p.x < curr_point.x and Direction.East not in directions:
+        if p.x > curr_point.x and Direction.East not in directions:
             directions.append(Direction.East)
         if p.y > curr_point.y and Direction.South not in directions:
             directions.append(Direction.South)
