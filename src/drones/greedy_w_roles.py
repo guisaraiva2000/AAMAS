@@ -12,6 +12,8 @@ class DroneGreedyRoles(Drone):
         self.fov_range = FOV_CLEANER_RANGE
         self.role = None
         self.drone_id = drone_id
+        self.selected_point1 = None
+
 
     def role_assignment(self):
         oil_spills = [oil for oil in self.clean_waters.oil_list
@@ -62,13 +64,15 @@ class DroneGreedyRoles(Drone):
     def target_moving(self) -> None:
         drones_around = self.see_drones_around()
 
-        if self.role is not None:
+        if self.role is not None and self.selected_point is None:
             oil_points = [oil for oil in self.role.points
                           if oil in self.clean_waters.scanned_poi_tiles or oil in self.fov]
-            dir_list = give_directions(self.point, [self.point.closest_point_from_points(oil_points)])
+            self.selected_point1 = [self.point.closest_point_from_points(oil_points)]
+            dir_list = give_directions(self.point, self.selected_point1)
             dirs = [d for d in dir_list if d not in give_directions(self.point, drones_around)]
             if dirs:
                 self.move(random.choice(dirs))
                 return
-
+        if self.point == self.selected_point:
+            self.selected_point1 = None
         self.reactive_movement()

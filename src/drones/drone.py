@@ -22,6 +22,7 @@ class Drone(pygame.sprite.Sprite, ABC):
         self.battery = BATTERY
         self.fov_range = FOV_DEFAULT_RANGE
         self.fov = self.calculate_fov()
+        self.selected_point = None
 
     def recharge(self) -> None:
         self.battery = BATTERY
@@ -29,7 +30,7 @@ class Drone(pygame.sprite.Sprite, ABC):
 
     def spend_energy(self) -> None:
         self.battery -= MOVEBATTERYCOST
-
+        
     def move(self, direction) -> None:
         if direction == -1:
             self.spend_energy()
@@ -103,20 +104,24 @@ class Drone(pygame.sprite.Sprite, ABC):
             elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge():
                 poi[1].append(point)
 
-        if poi[0]:
-            direction_lists[0] = give_directions(self.point, [self.point.closest_point_from_points(poi[0])])
+        if poi[0] and self.selected_point is not None:
+            self.selected_point = [self.point.closest_point_from_points(poi[0])]
+            direction_lists[0] = give_directions(self.point, self.selected_point)
         if poi[1]:
             direction_lists[1] = give_directions(self.point, [self.point.closest_point_from_points(poi[1])])
 
         for direction_list in direction_lists:
             dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]
             if dirs:
-                self.move(random.choice(dirs))
+                print("dirs", dirs)
+                self.move(random.choice(dirs)) 
                 return
 
         not_poi = [d for d in all_directions if d not in give_directions(self.point, drones_around)]
         self.move(random_direction()) if not_poi else self.move(-1)
-
+        if self.point == self.selected_point:
+            self.selected_point = None
+        
     @abstractmethod
     def agent_decision(self):
         pass
