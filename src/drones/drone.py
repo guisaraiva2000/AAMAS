@@ -113,7 +113,6 @@ class Drone(pygame.sprite.Sprite, ABC):
         for direction_list in direction_lists:
             dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]
             if dirs:
-                print("dirs", dirs)
                 self.move(random.choice(dirs)) 
                 return
 
