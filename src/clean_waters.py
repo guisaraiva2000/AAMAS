@@ -91,7 +91,7 @@ class CleanWaters:
 
             self.update()
             self.draw()
-            #time.sleep(0.05)
+            time.sleep(0.05)
 
         while self.drone_not_chosen and self.playing and self.running:
             self.check_events()

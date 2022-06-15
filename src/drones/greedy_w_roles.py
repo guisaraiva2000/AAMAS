@@ -57,8 +57,7 @@ class DroneGreedyRoles(Drone):
                 self.selected_point = [self.point.closest_point_from_points(oil_points)]
         elif self.role is not None:
             self.role = None
-
-        self.target_moving()
+        self.target_moving() 
         return
 
     def needs_recharge(self) -> bool:

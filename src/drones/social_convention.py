@@ -47,17 +47,6 @@ class DroneSocialConvention(Drone):
         if self.drone_id == 5:
             return [6, 7, 10, 11]
         
-    def role_assignment(self):
-
-                    
-        oil_spills = [oil for oil in self.clean_waters.oil_list
-                      if len(oil.tiles) and is_oil_scanned(oil.points, self.clean_waters.scanned_poi_tiles, self.fov)]
-        
-        for oil in oil_spills:
-            for tile in oil.tiles:
-                if tile.sector in self.drone_sectors:         
-                    return oil
-
     def agent_decision(self) -> None:
         if self.clean_waters.tile_dict[self.point].with_oil:
             self.clean_water()
@@ -65,27 +54,11 @@ class DroneSocialConvention(Drone):
         elif self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
             self.recharge()
 
-        elif self.role is None:
-            self.selected_point = None
-            self.role = self.role_assignment()  
-        elif self.role is not None:
-            self.role = None
-        
-        self.target_moving()            
+        else:    
+            self.target_moving()            
 
     def needs_recharge(self) -> bool:
         return self.battery <= 150
 
     def target_moving(self) -> None:
-        drones_around = self.see_drones_around()
-        oil_points = []        
-        if self.role and self.selected_point:
-            for oil in self.role.points:
-                oil_points.append(oil)            
-            dir_list = give_directions(self.point, self.selected_point)
-            dirs = [d for d in dir_list if d not in give_directions(self.point, drones_around)]
-            if dirs:
-                self.move(random.choice(dirs), self.drone_bounds)
-                return
-            
         self.reactive_movement(self.drone_bounds, self.drone_sectors)
