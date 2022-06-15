@@ -73,6 +73,8 @@ class Drone(pygame.sprite.Sprite, ABC):
         return fov
 
     def clean_water(self) -> None:
+        self.clean_waters.total_cleaned_tiles += 1
+
         self.clean_waters.tile_dict[self.point].with_oil = False
         self.clean_waters.scanned_poi_tiles.pop(self.point, None)
 

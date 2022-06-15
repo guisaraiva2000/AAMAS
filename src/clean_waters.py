@@ -55,7 +55,12 @@ class CleanWaters:
         self.drone_not_chosen = True
 
         # metrics
-        self.avg_oil_clean_time = 0
+        self.avg_oil_active_time = 0
+        self.total_tiles_w_ocean = 0
+        self.avg_tiles_w_ocean = 0
+        self.total_cleaned_tiles = 0
+        self.oil_left = 0
+        self.total_oil_spill = 0
 
     def drone_chosen(self, drone_type):
         if drone_type == "Random":
@@ -82,6 +87,9 @@ class CleanWaters:
         time.sleep(0.5)
         while self.playing:
             self.step_counter += 1
+            for tile in self.tile_dict.values():
+                if not tile.with_oil:
+                    self.total_tiles_w_ocean += 1
 
             if self.check_end_conditions():
                 print("------------Game Over------------")
@@ -194,24 +202,6 @@ class CleanWaters:
         drone = DroneGreedy(self, 26, 26)
         self.drone_group.add(drone)
         self.drone_list.append(drone)
-        """drone = DroneGreedy(self, 15, 18)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneGreedy(self, 16, 18)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneGreedy(self, 17, 18)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneGreedy(self, 18, 18)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneGreedy(self, 16, 19)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)
-        drone = DroneGreedy(self, 17, 19)
-        self.drone_group.add(drone)
-        self.drone_list.append(drone)"""
 
     def create_social_convention_drones(self):
         drone = DroneSocialConvention(self, 8, 8, 0)
@@ -281,7 +271,7 @@ class CleanWaters:
         lst = [x for x in self.tile_dict.values() if x.__class__ == Ocean]
         point = random.choice(lst).point
         oil_spill = self.tile_dict[point]
-        oil = Oil(len(self.oil_list), point, 1)
+        oil = Oil(len(self.oil_list), point, self.step_counter)
         oil_spill.with_oil = True
         oil.add_oil(oil_spill)
         self.oil_list.append(oil)
@@ -364,6 +354,9 @@ class CleanWaters:
         pygame.display.flip()
 
     def check_end_conditions(self):
+        if self.step_counter == MAX_STEPS:
+            return True
+
         if len(self.drone_list[4:]) == 0:
             print("All Drones Died")
             return True
@@ -378,13 +371,16 @@ class CleanWaters:
     def calculate_metrics(self):
         print("Total Steps:", self.step_counter)
         print("Number of Oil Spills:", len(self.oil_list))
-        total_oil_clean_time = 0
+        total_oil_active_time = 0
         for oil in self.oil_list:
             print("--------------------------------------\n{}".format(oil))
             if oil.stop_time:
-                total_oil_clean_time += oil.stop_time - oil.start_time
+                total_oil_active_time += oil.stop_time - oil.start_time
                 print("Time to clean:", oil.stop_time - oil.start_time)
             else:
+                self.oil_left += len(oil.tiles)
                 print("Time to clean: Was not cleaned.")
-        self.avg_oil_clean_time = total_oil_clean_time / len(self.oil_list)
 
+        self.avg_oil_active_time = total_oil_active_time / len(self.oil_list)
+        self.avg_tiles_w_ocean = self.total_tiles_w_ocean / MAX_STEPS
+        self.total_oil_spill = len(self.oil_list)

@@ -5,10 +5,27 @@ import numpy as np
 from clean_waters import CleanWaters
 from utils.analytics import compare_results
 
-N_RUNS = 2
-drone_types = ["Random", "Greedy", "Greedy w/ S. Convention", "Greedy w/ Roles"]
-studies = ["Average time spent cleaning an oil spill"]  # , "Average number of cleaned squares per step"]
-avg_oil_clean_time = []
+drone_types = [
+    "Random",
+    "Greedy",
+    "Greedy w/ S. Convention",
+    "Greedy w/ Roles"
+]
+
+studies = [
+    "Average time spent cleaning an oil spill",
+    "Average number of clean squares per step",
+    "Total number of cleaned squares",
+    "Total number of squares left to clean",
+    "Total number of oil spills"
+]
+
+
+def get_res(episodes, metric):
+    res = np.zeros(episodes)
+    res[0] = metric
+    return res
+
 
 if __name__ == "__main__":
 
@@ -18,18 +35,19 @@ if __name__ == "__main__":
 
     if opt.episodes != -1:
         runs_counter = 0
-        results = {studies[0]: {}}
+        results = {study: {} for study in studies}
 
         for drone_type in drone_types:
             cw = CleanWaters()
             while cw.running:
-                runs_counter += 1
                 cw.initiate()
                 cw.drone_chosen(drone_type)
                 cw.main_loop()
-                res = np.zeros(1)
-                res[0] = cw.avg_oil_clean_time
-                results[studies[0]][drone_type] = res
+                results[studies[0]][drone_type] = get_res(1, cw.avg_oil_active_time)
+                results[studies[1]][drone_type] = get_res(1, cw.avg_tiles_w_ocean)
+                results[studies[2]][drone_type] = get_res(1, cw.total_cleaned_tiles)
+                results[studies[3]][drone_type] = get_res(1, cw.oil_left)
+                results[studies[4]][drone_type] = get_res(1, cw.total_oil_spill)
                 break
 
         for study, result in results.items():
@@ -45,4 +63,3 @@ if __name__ == "__main__":
             cw.initiate()
             cw.main_loop()
             cw = CleanWaters()
-            #break
