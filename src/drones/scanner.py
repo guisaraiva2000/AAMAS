@@ -39,40 +39,8 @@ class DroneScanner(Drone):
     def needs_recharge(self):
         return self.battery < 150
 
-    def move(self, direction) -> None:
-        if direction == -1:
-            self.spend_energy()
-            self.is_dead()
-            self.fov = self.calculate_fov()
-            return
-
-        drone_points = []
-        for drone in self.clean_waters.drone_list:
-            drone_points.append(drone.point)
-        
-        point = self.point
-        if direction == Direction.West and self.point.x > self.drone_bounds[0] and self.point.x > 0:
-            point = Point(self.point.x - 1, self.point.y)
-        elif direction == Direction.East and self.point.x < self.drone_bounds[1] and self.point.x < 31:
-            point = Point(self.point.x + 1, self.point.y)
-        elif direction == Direction.South and self.point.y < self.drone_bounds[3] and self.point.y < 31:
-            point = Point(self.point.x, self.point.y + 1)
-        elif self.point.y >  self.drone_bounds[2] and self.point.y > 0:
-            point = Point(self.point.x, self.point.y - 1) 
-              
-        if point not in drone_points:
-            self.point = point
-            self.rect.center = [int((self.point.x * TILESIZE) + TILE_MARGIN_X),
-                                int((self.point.y * TILESIZE) + TILE_MARGIN_Y)]
-
-        self.spend_energy()
-        self.is_dead()
-        self.fov = self.calculate_fov()
-        return
-
-
     def target_moving(self)-> None:
-        self.move(random_direction())
+        self.move(random_direction(), self.drone_bounds)
          
     def send_oil_alert(self, tile):
         for i in range(len(self.clean_waters.oil_list)):

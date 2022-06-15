@@ -91,7 +91,7 @@ class CleanWaters:
 
             self.update()
             self.draw()
-           # time.sleep(0.1)
+            #time.sleep(0.05)
 
         while self.drone_not_chosen and self.playing and self.running:
             self.check_events()
@@ -365,7 +365,7 @@ class CleanWaters:
         pygame.display.flip()
 
     def check_end_conditions(self):
-        if len(self.drone_list) == 0:
+        if len(self.drone_list[4:]) == 0:
             print("All Drones Died")
             return True
 

@@ -12,8 +12,7 @@ class DroneGreedyRoles(Drone):
         self.fov_range = FOV_CLEANER_RANGE
         self.role = None
         self.drone_id = drone_id
-        self.selected_point1 = None
-
+        self.selected_point = None
 
     def role_assignment(self):
         oil_spills = [oil for oil in self.clean_waters.oil_list
@@ -44,18 +43,22 @@ class DroneGreedyRoles(Drone):
     def agent_decision(self) -> None:
         if self.clean_waters.tile_dict[self.point].with_oil:
             self.clean_water()
-
+            
         elif self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
             self.recharge()
-
-        else:
+            
+        elif self.role is None:
+            self.selected_point = None
             role_assignments = self.role_assignment()
             if role_assignments is not None and self in role_assignments:
                 self.role = role_assignments[self]
-            elif self.role is not None:
-                self.role = None
+                oil_points = [oil for oil in self.role.points
+                if oil in self.clean_waters.scanned_poi_tiles or oil in self.fov]
+                self.selected_point = [self.point.closest_point_from_points(oil_points)]
+        elif self.role is not None:
+            self.role = None
 
-            self.target_moving()
+        self.target_moving()
         return
 
     def needs_recharge(self) -> bool:
@@ -63,16 +66,13 @@ class DroneGreedyRoles(Drone):
 
     def target_moving(self) -> None:
         drones_around = self.see_drones_around()
-
-        if self.role is not None and self.selected_point is None:
-            oil_points = [oil for oil in self.role.points
-                          if oil in self.clean_waters.scanned_poi_tiles or oil in self.fov]
-            self.selected_point1 = [self.point.closest_point_from_points(oil_points)]
-            dir_list = give_directions(self.point, self.selected_point1)
+        if self.role and self.selected_point:
+            dir_list = give_directions(self.point, self.selected_point)
             dirs = [d for d in dir_list if d not in give_directions(self.point, drones_around)]
             if dirs:
                 self.move(random.choice(dirs))
                 return
-        if self.point == self.selected_point:
-            self.selected_point1 = None
+            
         self.reactive_movement()
+
+        

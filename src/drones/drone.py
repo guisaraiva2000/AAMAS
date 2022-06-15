@@ -22,7 +22,7 @@ class Drone(pygame.sprite.Sprite, ABC):
         self.battery = BATTERY
         self.fov_range = FOV_DEFAULT_RANGE
         self.fov = self.calculate_fov()
-        self.selected_point = None
+        #self.selected_point = None
 
     def recharge(self) -> None:
         self.battery = BATTERY
@@ -31,7 +31,7 @@ class Drone(pygame.sprite.Sprite, ABC):
     def spend_energy(self) -> None:
         self.battery -= MOVEBATTERYCOST
         
-    def move(self, direction) -> None:
+    def move(self, direction, limits = [0, 31, 0, 31]) -> None:
         if direction == -1:
             self.spend_energy()
             self.is_dead()
@@ -43,13 +43,13 @@ class Drone(pygame.sprite.Sprite, ABC):
             drone_points.append(drone.point)
 
         point = self.point
-        if direction == Direction.West and self.point.x > 0:
+        if direction == Direction.West and self.point.x > limits[0]:
             point = Point(self.point.x - 1, self.point.y)
-        elif direction == Direction.East and self.point.x < 31:
+        elif direction == Direction.East and self.point.x < limits[1]:
             point = Point(self.point.x + 1, self.point.y)
-        elif direction == Direction.South and self.point.y < 31:
+        elif direction == Direction.South and self.point.y < limits[3]:
             point = Point(self.point.x, self.point.y + 1)
-        elif self.point.y > 0:
+        elif self.point.y > limits[2]:
             point = Point(self.point.x, self.point.y - 1)
 
         if point not in drone_points:
@@ -90,7 +90,7 @@ class Drone(pygame.sprite.Sprite, ABC):
         return [drone.point for drone in self.clean_waters.drone_list
                 if math.dist([self.point.x, self.point.y], [drone.point.x, drone.point.y]) == 1]
 
-    def reactive_movement(self):
+    def reactive_movement(self, bounds = [0, 31, 0, 31], sectors = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] ):
         # 0 -> oil/ 1-> battery
         direction_lists = poi = [[], []]
         drones_around = self.see_drones_around()
@@ -98,28 +98,27 @@ class Drone(pygame.sprite.Sprite, ABC):
         observed_points = scanned_poi + self.fov if scanned_poi else self.fov
 
         for point in observed_points:
-            if self.clean_waters.tile_dict[point].with_oil:
-                poi[0].append(point)
-
-            elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge():
+            if self.clean_waters.tile_dict[point].with_oil and self.clean_waters.tile_dict[point].sector in sectors:
                 poi[1].append(point)
 
-        if poi[0] and self.selected_point is not None:
-            self.selected_point = [self.point.closest_point_from_points(poi[0])]
-            direction_lists[0] = give_directions(self.point, self.selected_point)
+            elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge() and self.clean_waters.tile_dict[point].sector in sectors:
+                poi[0].append(point)
+
+        if poi[0]:
+            direction_lists[0] = give_directions(self.point, [self.point.closest_point_from_points(poi[0])])
         if poi[1]:
             direction_lists[1] = give_directions(self.point, [self.point.closest_point_from_points(poi[1])])
 
         for direction_list in direction_lists:
             dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]
             if dirs:
-                self.move(random.choice(dirs)) 
+                self.move(random.choice(dirs), bounds) 
                 return
 
         not_poi = [d for d in all_directions if d not in give_directions(self.point, drones_around)]
-        self.move(random_direction()) if not_poi else self.move(-1)
-        if self.point == self.selected_point:
-            self.selected_point = None
+        self.move(random_direction(), bounds) if not_poi else self.move(-1)
+        """if self.point == self.selected_point:
+            self.selected_point = None"""
         
     @abstractmethod
     def agent_decision(self):
