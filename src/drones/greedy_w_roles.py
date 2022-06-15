@@ -1,9 +1,10 @@
 import random
 import numpy as np
 from drones.drone import Drone
-from environment.tile import Recharger
+from environment.tile import Recharger, Tile
 from utils.settings import FOV_CLEANER_RANGE, YELLOW
-from utils.util import give_directions, is_oil_scanned, potential_function
+from utils.util import give_directions, is_oil_scanned, Point, all_directions, random_direction
+from typing import List
 
 
 class DroneGreedyRoles(Drone):
@@ -12,12 +13,14 @@ class DroneGreedyRoles(Drone):
         self.fov_range = FOV_CLEANER_RANGE
         self.role = None
         self.drone_id = drone_id
-        self.selected_point = None
 
     def role_assignment(self):
+        def potential_function(drone_point: Point, oil_tiles: List[Tile]) -> float:
+            closest_point = drone_point.closest_point_from_points([oil_tile.point for oil_tile in oil_tiles])
+            return -drone_point.distance_to(closest_point)
+
         oil_spills = [oil for oil in self.clean_waters.oil_list
-                      if not oil.stop_time and is_oil_scanned(oil.points, self.clean_waters.scanned_poi_tiles, self.fov)]
-        oil_spills.reverse()
+                      if not oil.stop_time and is_oil_scanned(oil.tiles, self.clean_waters.scanned_poi_tiles, self.fov)]
         n_oil_spills = len(oil_spills)
         drone_list = [drone for drone in self.clean_waters.drone_list if drone.__class__ == self.__class__]
         n_drones = len(drone_list)
@@ -27,7 +30,7 @@ class DroneGreedyRoles(Drone):
             potentials = np.zeros((n_oil_spills, n_drones))
             for oil_idx in range(n_oil_spills):
                 for drone in range(n_drones):
-                    potentials[oil_idx, drone] = potential_function(drone_list[drone].point, oil_spills[oil_idx].points)
+                    potentials[oil_idx, drone] = potential_function(drone_list[drone].point, oil_spills[oil_idx].tiles)
 
             drone_roles = {}
             for oil_idx in range(n_oil_spills):
@@ -43,35 +46,46 @@ class DroneGreedyRoles(Drone):
     def agent_decision(self) -> None:
         if self.clean_waters.tile_dict[self.point].with_oil:
             self.clean_water()
-            
+
         elif self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
             self.recharge()
-            
-        elif self.role is None:
-            self.selected_point = None
+
+        else:
             role_assignments = self.role_assignment()
             if role_assignments is not None and self in role_assignments:
                 self.role = role_assignments[self]
-                oil_points = [oil for oil in self.role.points
-                if oil in self.clean_waters.scanned_poi_tiles or oil in self.fov]
-                self.selected_point = [self.point.closest_point_from_points(oil_points)]
-        elif self.role is not None:
+            self.target_moving()
             self.role = None
-        self.target_moving() 
+
         return
 
     def needs_recharge(self) -> bool:
         return self.battery <= 150
 
     def target_moving(self) -> None:
+        direction_lists = poi = [[], []]
         drones_around = self.see_drones_around()
-        if self.role and self.selected_point:
-            dir_list = give_directions(self.point, self.selected_point)
-            dirs = [d for d in dir_list if d not in give_directions(self.point, drones_around)]
-            if dirs:
-                self.move(random.choice(dirs))
-                return
-            
-        self.reactive_movement()
+        scanned_poi = list(self.clean_waters.scanned_poi_tiles.keys())
+        observed_points = scanned_poi + self.fov if scanned_poi else self.fov
 
-        
+        if self.role:
+            for point in observed_points:
+                if point in self.role.points and self.clean_waters.tile_dict[point].with_oil:
+                    poi[1].append(point)
+
+                elif self.clean_waters.tile_dict[point].__class__ == Recharger and self.needs_recharge():
+                    poi[0].append(point)
+
+            if poi[0]:
+                direction_lists[0] = give_directions(self.point, [self.point.closest_point_from_points(poi[0])])
+            if poi[1]:
+                direction_lists[1] = give_directions(self.point, [self.point.closest_point_from_points(poi[1])])
+
+            for direction_list in direction_lists:
+                dirs = [d for d in direction_list if d not in give_directions(self.point, drones_around)]
+                if dirs:
+                    self.move(random.choice(dirs))
+                    return
+
+        not_poi = [d for d in all_directions if d not in give_directions(self.point, drones_around)]
+        self.move(random_direction()) if not_poi else self.move(-1)

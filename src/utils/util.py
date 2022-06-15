@@ -2,7 +2,6 @@ import math
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import List
 
 
 class Direction(Enum):
@@ -27,11 +26,6 @@ class Point:
         return min(points, key=lambda point: self.distance_to(point))
 
 
-def potential_function(drone_point: Point, oil_points: List[Point]) -> float:
-    closest_point = drone_point.closest_point_from_points(oil_points)
-    return -drone_point.distance_to(closest_point)
-
-
 def random_direction():
     return random.choice(all_directions)
 
@@ -52,8 +46,8 @@ def give_directions(curr_point, ps: list) -> list:
     return directions
 
 
-def is_oil_scanned(oil_spill_points, scanned_oil_spills_dict, drone_fov):
-    for oil_point in oil_spill_points:
-        if oil_point in scanned_oil_spills_dict or oil_point in drone_fov:
+def is_oil_scanned(oil_spill_tiles, scanned_oil_spills_dict, drone_fov):
+    for oil_tile in oil_spill_tiles:
+        if oil_tile in scanned_oil_spills_dict.values() or oil_tile.point in drone_fov:
             return True
     return False

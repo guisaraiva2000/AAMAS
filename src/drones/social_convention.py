@@ -1,16 +1,15 @@
-import random
-import numpy as np
 from drones.drone import Drone
 from environment.tile import Recharger
 from utils.settings import FOV_CLEANER_RANGE, YELLOW
-from utils.util import give_directions, is_oil_scanned, all_directions, random_direction
 
 """ 0 -> 0 1 4 5
     1 -> 2 3 6 7
     2 -> 8 9 12 13
     3 -> 10 11 14 15 """
+
+
 class DroneSocialConvention(Drone):
-    def __init__(self, clean_waters, x, y, drone_id):      
+    def __init__(self, clean_waters, x, y, drone_id):
         super().__init__(clean_waters, x, y, YELLOW)
         self.fov_range = FOV_CLEANER_RANGE
         self.role = None
@@ -18,9 +17,9 @@ class DroneSocialConvention(Drone):
         self.drone_bounds = self.assign_boundaries()
         self.drone_sectors = self.assign_sectors()
         self.selected_point = None
-               
+
     def assign_boundaries(self):
-        if self.drone_id == 0: #(xmin, xmax, ymin, ymax)
+        if self.drone_id == 0:  # (xmin, xmax, ymin, ymax)
             return [0, 15, 0, 15]
         if self.drone_id == 1:
             return [16, 31, 0, 15]
@@ -31,8 +30,8 @@ class DroneSocialConvention(Drone):
         if self.drone_id == 4:
             return [0, 15, 8, 23]
         if self.drone_id == 5:
-            return [16, 31, 8, 23]  
-               
+            return [16, 31, 8, 23]
+
     def assign_sectors(self):
         if self.drone_id == 0:
             return [0, 1, 4, 5]
@@ -46,7 +45,7 @@ class DroneSocialConvention(Drone):
             return [4, 5, 8, 9]
         if self.drone_id == 5:
             return [6, 7, 10, 11]
-        
+
     def agent_decision(self) -> None:
         if self.clean_waters.tile_dict[self.point].with_oil:
             self.clean_water()
@@ -54,8 +53,8 @@ class DroneSocialConvention(Drone):
         elif self.clean_waters.tile_dict[self.point].__class__ == Recharger and self.needs_recharge():
             self.recharge()
 
-        else:    
-            self.target_moving()            
+        else:
+            self.target_moving()
 
     def needs_recharge(self) -> bool:
         return self.battery <= 150

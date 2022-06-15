@@ -9,7 +9,7 @@ from environment.tile import *
 @dataclass
 class Wind:
     direction: Direction
-    strength: int = 10  # Max Intensity
+    strength: int = MAX_WIND  # Max Intensity
 
 
 @dataclass(order=True)
@@ -31,7 +31,7 @@ class Oil:
     def add_oil(self, tile: Tile):
         if tile.point not in self.points:
             self.points.append(tile.point)
-            self.tiles.append(tile)
+        self.tiles.append(tile)
 
     def update_oil(self) -> None:
         self.tiles = [tile for tile in self.tiles if tile.with_oil]

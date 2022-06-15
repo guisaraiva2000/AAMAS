@@ -1,9 +1,8 @@
 from drones.drone import Drone
 from environment.tile import Recharger
-from utils.settings import *
 from utils.settings import GREEN, FOV_SCANNER_RANGE
-from utils.util import Point, random_direction
-from utils.util import Direction
+from utils.util import random_direction
+
 
 class DroneScanner(Drone):
     def __init__(self, clean_waters, x, y, scanner_id):
@@ -12,9 +11,9 @@ class DroneScanner(Drone):
         self.battery = 9999
         self.scanner_id = scanner_id
         self.drone_bounds = self.assign_boundaries()
-        
+
     def assign_boundaries(self):
-        if self.scanner_id == 0: #(xmin, xmax, ymin, ymax)
+        if self.scanner_id == 0:  # (xmin, xmax, ymin, ymax)
             return [0, 15, 0, 15]
         if self.scanner_id == 1:
             return [16, 31, 0, 15]
@@ -22,7 +21,7 @@ class DroneScanner(Drone):
             return [0, 15, 16, 31]
         if self.scanner_id == 3:
             return [16, 31, 16, 31]
-        
+
     def agent_decision(self):
         for point in self.fov:
             tile = self.clean_waters.tile_dict[point]
@@ -39,9 +38,9 @@ class DroneScanner(Drone):
     def needs_recharge(self):
         return self.battery < 150
 
-    def target_moving(self)-> None:
+    def target_moving(self) -> None:
         self.move(random_direction(), self.drone_bounds)
-         
+
     def send_oil_alert(self, tile):
         for i in range(len(self.clean_waters.oil_list)):
             if not self.clean_waters.oil_list[i].detected and tile in self.clean_waters.oil_list[i].tiles:
