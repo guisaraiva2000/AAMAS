@@ -34,17 +34,17 @@ class DroneSocialConvention(Drone):
 
     def assign_sectors(self):
         if self.drone_id == 0:
-            return [0, 1, 4, 5]
+            return [0, 2]
         if self.drone_id == 1:
-            return [2, 3, 6, 7]
+            return [1, 3]
         if self.drone_id == 2:
-            return [8, 9, 12, 13]
+            return [4, 6]
         if self.drone_id == 3:
-            return [10, 11, 14, 15]
+            return [5, 7]
         if self.drone_id == 4:
-            return [4, 5, 8, 9]
+            return [2, 4]
         if self.drone_id == 5:
-            return [6, 7, 10, 11]
+            return [3, 5]
 
     def agent_decision(self) -> None:
         if self.clean_waters.tile_dict[self.point].with_oil:

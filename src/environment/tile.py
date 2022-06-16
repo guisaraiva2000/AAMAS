@@ -23,7 +23,7 @@ class Tile(pygame.sprite.Sprite, ABC):
 
 class Recharger(Tile):
     def __init__(self, clean_waters, x, y):
-        super().__init__(clean_waters, x, y, RED)
+        super().__init__(clean_waters, x, y, RED_WINE)
         self.is_recharger = True
 
 

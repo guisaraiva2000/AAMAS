@@ -1,7 +1,5 @@
 import argparse
-
 import numpy as np
-
 from clean_waters import CleanWaters
 from utils.analytics import compare_results
 
@@ -13,48 +11,42 @@ drone_types = [
 ]
 
 studies = [
-    "Average time spent cleaning an oil spill",
-    "Average number of clean squares per step",
-    "Total number of cleaned squares",
-    "Total number of squares left to clean",
-    "Total number of oil spills"
+    ("Average Oil Spill Active Time-Steps",               "time-steps"),
+    ("Average Number of Ocean Squares p/ Time-Step (%)",  "number of ocean squares / time-step (%)"),
+    ("Total Number of Cleaned Squares",                   "number of squares"),
+    ("Total Number of Squares Left to Clean (%)",         "number of squares (%)"),
+    ("Total Number of Oil Spills",                        "number of oil spills"),
+    ("Total Time-Steps Until End of Simulation",          "time-steps")
 ]
-
-
-def get_res(episodes, metric):
-    res = np.zeros(episodes)
-    res[0] = metric
-    return res
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--episodes", type=int, default=-1)
+    parser.add_argument("--episodes", type=int)
     opt = parser.parse_args()
 
-    if opt.episodes != -1:
-        runs_counter = 0
-        results = {study: {} for study in studies}
+    if opt.episodes:
+        results = {study: {drone_type: np.zeros(opt.episodes) for drone_type in drone_types} for study in studies}
 
         for drone_type in drone_types:
-            cw = CleanWaters()
-            while cw.running:
+            for episode in range(opt.episodes):
+                cw = CleanWaters()
                 cw.initiate()
                 cw.drone_chosen(drone_type)
                 cw.main_loop()
-                results[studies[0]][drone_type] = get_res(1, cw.avg_oil_active_time)
-                results[studies[1]][drone_type] = get_res(1, cw.avg_tiles_w_ocean)
-                results[studies[2]][drone_type] = get_res(1, cw.total_cleaned_tiles)
-                results[studies[3]][drone_type] = get_res(1, cw.oil_left)
-                results[studies[4]][drone_type] = get_res(1, cw.total_oil_spill)
-                break
+                results[studies[0]][drone_type][episode] = cw.avg_oil_active_time
+                results[studies[1]][drone_type][episode] = cw.avg_tiles_w_ocean * 100 / 1500
+                results[studies[2]][drone_type][episode] = cw.total_cleaned_tiles
+                results[studies[3]][drone_type][episode] = cw.oil_left * 100 / 1500
+                results[studies[4]][drone_type][episode] = cw.total_oil_spill
+                results[studies[5]][drone_type][episode] = cw.step_counter
 
         for study, result in results.items():
             compare_results(
                 result,
-                title=study,
-                metric=study,
+                title=study[0],
+                metric=study[1],
                 colors=["orange", "green", "blue", "red"]
             )
     else:
@@ -62,4 +54,7 @@ if __name__ == "__main__":
         while cw.running:
             cw.initiate()
             cw.main_loop()
+            cw.drone_not_chosen = True
+            while cw.drone_not_chosen:
+                cw.check_events()
             cw = CleanWaters()

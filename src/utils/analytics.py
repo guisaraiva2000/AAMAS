@@ -127,6 +127,6 @@ def compare_results(results, confidence=0.95, title="Agents Comparison", metric=
         std_devs=stds,
         N=N,
         title=title,
-        x_label="", y_label=f"Avg. {metric}",
+        x_label="", y_label=f"{metric}",
         confidence=confidence, show=True, colors=colors
     )

@@ -13,11 +13,11 @@ class Button:
         self.text = text
         self.text_color = text_color
 
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height), border_radius=30)
+    def draw(self, win, border=0, border_radius=15):
+        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height), border, border_radius)
 
         if self.text != '':
-            font = pygame.font.SysFont('Verdana', 13, True)
+            font = pygame.font.SysFont('candara', 16, True)
             text = font.render(self.text, True, self.text_color)
             win.blit(text, (
                 self.x + (self.width / 2 - text.get_width() / 2), self.y + (self.height / 2 - text.get_height() / 2)))

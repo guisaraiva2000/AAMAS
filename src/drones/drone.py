@@ -91,7 +91,7 @@ class Drone(pygame.sprite.Sprite, ABC):
         return [drone.point for drone in self.clean_waters.drone_list
                 if math.dist([self.point.x, self.point.y], [drone.point.x, drone.point.y]) == 1]
 
-    def reactive_movement(self, bounds=(0, 31, 0, 31), sectors=(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)):
+    def reactive_movement(self, bounds=(0, 31, 0, 31), sectors=(0, 1, 2, 3, 4, 5, 6, 7)):
         # 0 -> oil/ 1-> battery
         direction_lists = poi = [[], []]
         drones_around = self.see_drones_around()

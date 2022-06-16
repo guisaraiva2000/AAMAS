@@ -1,12 +1,12 @@
 from drones.drone import Drone
 from environment.tile import Recharger
-from utils.settings import GREEN, FOV_SCANNER_RANGE
+from utils.settings import DARK_BLUE, FOV_SCANNER_RANGE
 from utils.util import random_direction
 
 
 class DroneScanner(Drone):
     def __init__(self, clean_waters, x, y, scanner_id):
-        super().__init__(clean_waters, x, y, GREEN)
+        super().__init__(clean_waters, x, y, DARK_BLUE)
         self.fov_range = FOV_SCANNER_RANGE
         self.battery = 9999
         self.scanner_id = scanner_id
