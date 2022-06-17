@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 from clean_waters import CleanWaters
 from utils.analytics import compare_results
+from utils.settings import MAX_STEPS
 
 drone_types = [
     "Random",
@@ -10,6 +11,7 @@ drone_types = [
     "Greedy w/ Roles"
 ]
 
+# (title, metric)
 studies = [
     ("Average Oil Spill Active Time-Steps",               "time-steps"),
     ("Average Number of Ocean Squares p/ Time-Step (%)",  "number of ocean squares / time-step (%)"),
@@ -36,9 +38,9 @@ if __name__ == "__main__":
                 cw.drone_chosen(drone_type)
                 cw.main_loop()
                 results[studies[0]][drone_type][episode] = cw.avg_oil_active_time
-                results[studies[1]][drone_type][episode] = cw.avg_tiles_w_ocean * 100 / 1500
-                results[studies[2]][drone_type][episode] = cw.total_cleaned_tiles
-                results[studies[3]][drone_type][episode] = cw.oil_left * 100 / 1500
+                results[studies[1]][drone_type][episode] = cw.avg_squares_w_ocean * 100 / MAX_STEPS
+                results[studies[2]][drone_type][episode] = cw.total_cleaned_squares
+                results[studies[3]][drone_type][episode] = cw.oil_left * 100 / MAX_STEPS
                 results[studies[4]][drone_type][episode] = cw.total_oil_spill
                 results[studies[5]][drone_type][episode] = cw.step_counter
 
