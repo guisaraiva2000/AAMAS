@@ -43,4 +43,4 @@ python src/main.py --episodes N
 In which the letter N corresponds to the number of episodes that you want to run for each metric.
 
 
-<video src="[assets/CleanWatersDemo.mp4](https://user-images.githubusercontent.com/43784699/174335273-104cddca-4cc5-4ca6-b1d9-6f6fe56af4c3.mp4)"></video>
+<video src="https://user-images.githubusercontent.com/43784699/174335273-104cddca-4cc5-4ca6-b1d9-6f6fe56af4c3.mp4"></video>
