@@ -42,4 +42,4 @@ python src/main.py --episodes N
 ```
 In which the letter N corresponds to the number of episodes that you want to run for each metric.
 
-<video src='assets/CleanWatersDemo.mp4' width=800/>
+<video src='assets/CleanWatersDemo.mp4' width=800 height=700/></video>
